@@ -280,7 +280,7 @@ export default function DisasterDashboard() {
           {/* Main Content - 70% width when sidebar is open, 100% when closed */}
           <div
             className={`
-              transition-all duration-300 min-h-[calc(100vh-73px)] mt-[73px]
+              transition-all duration-300 min-h-[calc(100vh-73px)]
               ${sidebarOpen ? 'w-[70%] ml-[30%]' : 'w-full ml-0'}
             `}
             onClick={() => {
