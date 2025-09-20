@@ -18,7 +18,9 @@ import {
   Sun,
   Moon,
   RefreshCcw,
-  Search
+  Search,
+  MessageCircle,
+  Send
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,6 +50,16 @@ export default function DisasterDashboard() {
   const [mapZoom, setMapZoom] = useState(1)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatInput, setChatInput] = useState("")
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: "Hello! I'm your AI assistant for disaster response. How can I help you today?",
+      isAI: true,
+      timestamp: "Just now"
+    }
+  ])
   const sidebarRef = useRef<HTMLDivElement>(null)
   const DisasterMap = dynamic(() => import("@/components/ui/DisasterMap"), {
     ssr: false,
@@ -116,6 +128,32 @@ export default function DisasterDashboard() {
       console.log("[DEBUG]", mapData);
       setDisasterData(mapData);
     });
+  }
+
+  const handleSendMessage = () => {
+    if (chatInput.trim()) {
+      const now = new Date()
+      const newMessage = {
+        id: messages.length + 1,
+        text: chatInput,
+        isAI: false,
+        timestamp: now.toLocaleTimeString()
+      }
+      setMessages([...messages, newMessage])
+      setChatInput("")
+      
+      // Simulate AI response after a delay
+      setTimeout(() => {
+        const aiResponseTime = new Date()
+        const aiResponse = {
+          id: messages.length + 2,
+          text: "Thank you for your message. I'm here to help with disaster response information. Could you please provide more details about what you need assistance with?",
+          isAI: true,
+          timestamp: aiResponseTime.toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, aiResponse])
+      }, 1000)
+    }
   }
 
   return (
@@ -383,6 +421,94 @@ export default function DisasterDashboard() {
             </main>
           </div>
         </div>
+
+        {/* Floating Chat Button */}
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className="fixed bottom-6 right-6 z-[999] w-14 h-14 bg-primary hover:bg-primary/90 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+        >
+          <MessageCircle className="h-6 w-6 text-primary-foreground" />
+        </button>
+
+        {/* Chat Panel - Slides in from right */}
+        <div
+          className={`
+            fixed top-0 right-0 h-full w-full sm:w-96 bg-card border-l border-border z-[9998] 
+            transform transition-transform duration-300 ease-in-out
+            ${chatOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          {/* Chat Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+            <h2 className="text-lg font-bold text-card-foreground">Disaster AI Assistant</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setChatOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Chat Content */}
+          <div className="flex flex-col" style={{ height: 'calc(100% - 73px)' }}>
+            {/* Messages Area */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.isAI ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.isAI
+                        ? 'bg-muted text-muted-foreground'
+                        : 'bg-primary text-primary-foreground'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                    {message.timestamp !== "Just now" && (
+                      <p className="text-xs opacity-70 mt-1">
+                        {message.timestamp}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-border bg-card">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Ask me anything about disaster response..."
+                  className="flex-1 p-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <Button 
+                  size="sm" 
+                  className="px-3"
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay when chat is open */}
+        {chatOpen && (
+          <div
+            className="fixed inset-0 bg-black/20 z-[9997]"
+            onClick={() => setChatOpen(false)}
+          />
+        )}
 
         {/* Incident Detail Modal */}
         <Dialog open={!!selectedIncident} onOpenChange={() => setSelectedIncident(null)}>
