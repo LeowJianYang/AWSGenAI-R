@@ -17,6 +17,7 @@ import {
   Building,
   Sun,
   Moon,
+  RefreshCcw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,12 +25,28 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import axios from "axios"
+
+
+type DisasterData ={
+  title: string,
+  pubDate:string,
+  eventid: string,
+  location: string;
+  eventtype: string;
+  alertlevel: string;
+  level: {
+    unit: string;
+    value: number;
+  };
+}
 
 export default function DisasterDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false) // Default to closed for both mobile and desktop
   const [selectedIncident, setSelectedIncident] = useState<any>(null)
   const [mapZoom, setMapZoom] = useState(1)
   const [isDarkMode, setIsDarkMode] = useState(true) // Added theme state
+  const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
 
   useEffect(() => {
     // Apply initial theme class
@@ -67,13 +84,35 @@ export default function DisasterDashboard() {
     description: "A multi-story residential building is on fire. Emergency services are on site.",
   }
 
+
+  const handleRefreshStatus = async ()=>{
+       axios.get('/api/disaster').then((response)=>{
+
+        const mapData= response.data.map((item: any) => ({
+              title: item.title,
+              pubDate: item.pubDate,
+              eventid: item.eventid,
+              location: item.country,
+              eventType: item.eventtype,
+              alertLevel: item.alertlevel,
+              level: {
+                unit: item.severity["$"].unit,
+                value: item.severity["$"].value,
+              },
+            }));
+            console.log("[DEBUG]", mapData);
+            setDisasterData(mapData);
+       });
+       
+  }
+
   return (
     <div className={`min-h-screen ${isDarkMode ? "dark" : ""}`}>
       <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
         <header className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2 md:gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Button variant="ghost" size="sm" onClick={() => {setSidebarOpen(!sidebarOpen), handleRefreshStatus()}}>
               <Menu className="h-5 w-5" />
             </Button>
             <Shield className="h-6 w-6 md:h-8 md:w-8 text-primary" />
@@ -108,9 +147,13 @@ export default function DisasterDashboard() {
           >
             <div className="flex-1 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-                <div className="flex justify-end">
+                <div className="flex justify-end flex-row">
                   <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
                     <X className="h-5 w-5" />
+                  </Button>
+
+                  <Button variant="ghost" size="sm" onClick={() => handleRefreshStatus()}>
+                    <RefreshCcw className="h-5 w-5" />
                   </Button>
                 </div>
 
@@ -118,11 +161,21 @@ export default function DisasterDashboard() {
                 <div className="space-y-3">
                   <h2 className="text-base md:text-lg font-semibold text-sidebar-foreground">Active Disaster</h2>
                   <div className="space-y-2">
-                    <h3 className="text-lg md:text-xl font-bold text-sidebar-foreground">California Wildfires</h3>
-                    <p className="text-xs md:text-sm text-sidebar-foreground/80">Updated: 18 Sept 2025, 05:04 AM</p>
-                    <Badge variant="destructive" className="bg-primary text-primary-foreground text-xs">
-                      Critical
-                    </Badge>
+                    {disasterData.slice(0,3).map((item,idx)=>
+                    idx<3 ?
+                    (
+                    <>
+                     
+                      <h3 className="text-lg md:text-xl font-bold text-sidebar-foreground">{item.title}</h3>
+                      <p className="text-xs md:text-sm text-sidebar-foreground/80">Updated At: {item.pubDate}</p>
+                      <p className="text-xs md:text-sm text-sidebar-foreground/80">Severity: {item.level.unit} {item.level.value}</p>
+                      <Badge variant="destructive" className="bg-primary text-primary-foreground text-xs">
+                        Critical
+                      </Badge>
+                    </>
+                    ):null
+                    )}
+                    
                   </div>
                 </div>
 
