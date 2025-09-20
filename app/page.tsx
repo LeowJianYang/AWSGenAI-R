@@ -149,7 +149,7 @@ export default function DisasterDashboard() {
           <aside
             className={`${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            } fixed z-50 w-80 transition-transform duration-300 bg-sidebar border-r border-sidebar-border flex flex-col h-[calc(100vh-73px)]`}
+            } fixed z-[9999] w-80 transition-transform duration-300 bg-sidebar border-r border-sidebar-border flex flex-col h-[calc(100vh-73px)]`}
           >
             <div className="flex-1 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-4 md:space-y-6">
@@ -262,7 +262,41 @@ export default function DisasterDashboard() {
           <main className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6 min-w-0">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {/* ... your 3 metric cards unchanged ... */}
+              <Card className="bg-card border-border">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                    Estimated Affected
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-card-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl md:text-2xl font-bold text-card-foreground">14,830</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-border">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                    Active Incidents
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl md:text-2xl font-bold text-primary">215</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card border-border sm:col-span-2 lg:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                    Resources Deployed
+                  </CardTitle>
+                  <ShieldCheck className="h-4 w-4 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-xl md:text-2xl font-bold text-accent">78</div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Interactive Map */}
