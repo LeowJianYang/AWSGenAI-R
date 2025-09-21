@@ -52,6 +52,7 @@ export default function DisasterDashboard() {
   const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState("")
+  const [LastUpdated, setLastUpdated] = useState<number>(0);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -64,6 +65,18 @@ export default function DisasterDashboard() {
   const DisasterMap = dynamic(() => import("@/components/ui/DisasterMap"), {
     ssr: false,
   });
+
+ // Auto-refresh disaster data every 5 minutes
+  useEffect (()=>{
+    const interval = setInterval(()=>{
+       if (Date.now()- LastUpdated > 300000){
+        handleRefreshStatus();
+        setLastUpdated(Date.now());
+       }
+    },60000)
+    return () => clearInterval(interval);
+  }, [LastUpdated])
+
 
   useEffect(() => {
     if (isDarkMode) {
@@ -127,6 +140,7 @@ export default function DisasterDashboard() {
       }));
       console.log("[DEBUG]", mapData);
       setDisasterData(mapData);
+      setLastUpdated(Date.now());
     });
   }
 
@@ -145,13 +159,15 @@ export default function DisasterDashboard() {
       // Simulate AI response after a delay
       setTimeout(() => {
         const aiResponseTime = new Date()
-        const aiResponse = {
-          id: messages.length + 2,
-          text: "Thank you for your message. I'm here to help with disaster response information. Could you please provide more details about what you need assistance with?",
-          isAI: true,
-          timestamp: aiResponseTime.toLocaleTimeString()
-        }
-        setMessages(prev => [...prev, aiResponse])
+        axios.post('/api/ask', { question: newMessage.text }).then((response) => {
+          const aiResponse = {
+            id: messages.length + 2,
+            text: response.data.answer,
+            isAI: true,
+            timestamp: aiResponseTime.toLocaleTimeString()
+          }
+          setMessages(prev => [...prev, aiResponse])
+        })
       }, 1000)
     }
   }
@@ -318,7 +334,7 @@ export default function DisasterDashboard() {
           {/* Main Content - 70% width when sidebar is open, 100% when closed */}
           <div
             className={`
-              transition-all duration-300 min-h-[calc(100vh-73px)] mt-[73px]
+              transition-all duration-300 min-h-[calc(100vh-73px)]
               ${sidebarOpen ? 'w-[70%] ml-[30%]' : 'w-full ml-0'}
             `}
             onClick={() => {
