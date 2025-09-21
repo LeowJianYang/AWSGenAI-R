@@ -1,58 +1,27 @@
 'use client'
 
 import * as React from 'react'
-import { useState, useMemo } from 'react'
-import { Search, MapPin, AlertTriangle, Flame, Droplets, Wind } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  Search,
+  MapPin,
+  Flame,
+  Droplets,
+  Wind,
+  AlertTriangle
+} from 'lucide-react'
 
-// Mock data for demonstration - replace with your actual data source
-const mockDisasterData = [
-  {
-    id: 1,
-    type: 'Wildfire',
-    severity: 'High',
-    location: 'Los Angeles, CA',
-    description: 'Brush fire spreading rapidly in Santa Clarita area',
-    status: 'Active',
-    updated: '2 hours ago'
-  },
-  {
-    id: 2,
-    type: 'Flood',
-    severity: 'Medium',
-    location: 'Houston, TX',
-    description: 'Flash flooding in downtown area after heavy rainfall',
-    status: 'Ongoing',
-    updated: '5 hours ago'
-  },
-  {
-    id: 3,
-    type: 'Hurricane',
-    severity: 'Extreme',
-    location: 'Miami, FL',
-    description: 'Category 4 hurricane approaching coastal areas',
-    status: 'Imminent',
-    updated: '1 hour ago'
-  },
-  {
-    id: 4,
-    type: 'Earthquake',
-    severity: 'High',
-    location: 'San Francisco, CA',
-    description: '5.8 magnitude earthquake felt across Bay Area',
-    status: 'Aftermath',
-    updated: '12 hours ago'
-  },
-  {
-    id: 5,
-    type: 'Tornado',
-    severity: 'High',
-    location: 'Oklahoma City, OK',
-    description: 'Tornado touched down in suburban areas',
-    status: 'Active',
-    updated: '3 hours ago'
-  }
-]
+interface DisasterItem {
+  id: string | number
+  type: string
+  location: string
+  severity: string
+  description: string
+  updated: string
+  status: string
+}
 
+// Icon component
 const DisasterIcon = ({ type }: { type: string }) => {
   switch (type.toLowerCase()) {
     case 'wildfire':
@@ -69,6 +38,7 @@ const DisasterIcon = ({ type }: { type: string }) => {
   }
 }
 
+// Severity badge component
 const SeverityBadge = ({ severity }: { severity: string }) => {
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
@@ -95,16 +65,45 @@ const SeverityBadge = ({ severity }: { severity: string }) => {
 export default function DisasterSearch() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [disasters, setDisasters] = useState<DisasterItem[]>([])
+
+  useEffect(() => {
+    fetch('/api/disaster')
+      .then(res => res.json())
+      .then(data => {
+        const mapped = data.map((item: any, idx: number) => ({
+        id: item.eventid || idx,
+       type: mapEventType(item.eventtype),
+       location: item.country || "Unknown",
+       severity: typeof item.severity === 'object' ? item.severity._ || "N/A" : item.severity || "N/A",
+       description: item.title,
+       updated: item.pubDate,
+       status: item.alertlevel || "Unknown",
+}))
+
+        setDisasters(mapped)
+      })
+  }, [])
+
+  function mapEventType(code: string) {
+    switch (code) {
+      case 'EQ': return 'earthquake'
+      case 'TC': return 'hurricane'
+      case 'FL': return 'flood'
+      case 'VO': return 'volcano'
+      default: return code?.toLowerCase() || 'other'
+    }
+  }
 
   const filteredDisasters = useMemo(() => {
     if (!searchQuery.trim()) return []
-    
     const query = searchQuery.toLowerCase().trim()
-    return mockDisasterData.filter(disaster => 
-      disaster.location.toLowerCase().includes(query) || 
-      disaster.type.toLowerCase().includes(query)
+    return disasters.filter(
+      disaster =>
+        disaster.location.toLowerCase().includes(query) ||
+        disaster.type.toLowerCase().includes(query)
     )
-  }, [searchQuery])
+  }, [searchQuery, disasters])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
