@@ -30,6 +30,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import dynamic from "next/dynamic";
 import axios from "axios"
+import '../styles/globals.css';
+
+
+
 
 type DisasterData = {
   title: string,
@@ -213,7 +217,7 @@ export default function DisasterDashboard() {
             ref={sidebarRef}
             className={`
               fixed inset-y-0 left-0 z-50 h-[calc(100vh-73px)] mt-[73px] transition-all duration-300 ease-in-out
-              bg-sidebar text-sidebar-foreground overflow-y-auto border-r border-sidebar-border
+              bg-[-var(sidebar)] text-[var(--sidebar-foreground)] overflow-y-auto border-r border-[var(--sidebar-border)]
               ${sidebarOpen ? 'translate-x-0 w-[30%]' : '-translate-x-full w-0'}
             `}
           >
@@ -231,56 +235,72 @@ export default function DisasterDashboard() {
 
                 {/* Search Bar */}
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-[var(--muted-foreground)]" />
                   <input
                     type="search"
                     placeholder="Search incidents..."
-                    className="w-full bg-background pl-8 p-2 rounded-md border border-border"
+                    className="w-full bg-[var(--background)] pl-8 p-2 rounded-md border  border-[var(--border)]"
                   />
                 </div>
 
                 {/* Active Disaster Section */}
                 <div className="space-y-3">
-                  <h2 className="text-base md:text-lg font-semibold text-sidebar-foreground">Active Disaster</h2>
+                  <h2 className="text-base md:text-lg font-semibold">Active Disaster</h2>
                   <div className="space-y-2">
-                    {disasterData.slice(0, 3).map((item, idx) =>
-                      idx < 3 ? (
-                        <div key={idx} className="mb-4">
-                          <h3 className="text-lg md:text-xl font-bold text-sidebar-foreground">{item.title}</h3>
-                          <p className="text-xs md:text-sm text-sidebar-foreground/80">Updated At: {item.pubDate}</p>
-                          <p className="text-xs md:text-sm text-sidebar-foreground/80">Severity: {item.level.unit} {item.level.value}</p>
-                          <Badge variant="destructive" className="bg-primary text-primary-foreground text-xs">
-                            Critical
-                          </Badge>
-                        </div>
-                      ) : null
-                    )}
-                  </div>
+                    {disasterData.slice(0, 3).map((item, idx) => {
+                      const disasterColors: Record<string, string> = {
+                        flood: 'var(--disaster-flood)',
+                        wildfire: 'var(--disaster-fire)',
+                        earthquake: 'var(--disaster-earthquake)',
+                        storm: 'var(--disaster-storm)',
+                        landslide: 'var(--disaster-landslide)',
+                      }
+                      const bgColor = disasterColors[item.eventtype?.toLowerCase()] || 'var(--primary)'
+                      return (
+                        <div key={idx} className="mb-4 p-3 rounded-md" style={{ backgroundColor: bgColor }}>
+                          <h3 className="text-lg md:text-xl font-bold text-white">{item.title}</h3>
+                          <p className="text-xs md:text-sm text-white/80">Updated At: {item.pubDate}</p>
+                          <p className="text-xs md:text-sm text-white/80">
+                            Severity: {item.level.unit} {item.level.value}
+                          </p>
+                          <Badge
+                            className="text-xs mt-2"
+                            style={{
+                            backgroundColor: 'var(--critical)',
+                            color: 'var(--critical-foreground)',
+                         }}
+                        >
+                         Critical
+                       </Badge>
+                     </div>
+                    )
+                  })}
                 </div>
+              </div>
 
                 {/* Map Filters & Layers */}
                 <div className="space-y-4">
-                  <h3 className="text-base md:text-lg font-semibold text-sidebar-foreground">Map Filters & Layers</h3>
+                 <h3 className="text-base md:text-lg font-semibold">Map Filters & Layers</h3>
 
                   <div className="space-y-2">
-                    <label className="text-xs md:text-sm font-medium text-sidebar-foreground">Disaster Type</label>
+                     <label className="text-xs md:text-sm font-medium">Disaster Type</label>
                     <Select defaultValue="all">
-                      <SelectTrigger className="bg-sidebar-accent text-sidebar-accent-foreground text-sm">
+                      <SelectTrigger className="bg-[var(--sidebar-accent)] text-[var(--sidebar-accent-foreground)] text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="wildfire">Wildfire</SelectItem>
-                        <SelectItem value="flood">Flood</SelectItem>
-                        <SelectItem value="earthquake">Earthquake</SelectItem>
+                        <SelectItem value="wildfire" className="text-[var(--disaster-fire)]">Wildfire</SelectItem>
+                        <SelectItem value="flood" className="text-[var(--disaster-flood)]">Flood</SelectItem>
+                        <SelectItem value="earthquake" className="text-[var(--disaster-earthquake)]">Earthquake</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs md:text-sm font-medium text-sidebar-foreground">Timeframe</label>
+                    <label className="text-xs md:text-sm font-medium">Timeframe</label>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Button variant="secondary" size="sm" className="text-xs flex-1">
+                      <Button variant="secondary" size="sm" className="text-xs flex-1 bg-[var(--stat-incidents)] text-white">
                         Last Hour
                       </Button>
                       <Button variant="outline" size="sm" className="text-xs bg-transparent flex-1">
@@ -293,7 +313,7 @@ export default function DisasterDashboard() {
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-xs md:text-sm font-medium text-sidebar-foreground">Data Layers</label>
+                    <label className="text-xs md:text-sm font-medium">Data Layers</label>
                     <div className="space-y-2">
                       {[
                         { label: "Incident Reports", checked: true },
@@ -313,23 +333,40 @@ export default function DisasterDashboard() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-base md:text-lg font-semibold text-sidebar-foreground">Live Feed</h3>
-                  <div className="space-y-3">
-                    {liveFeedItems.map((item, index) => (
-                      <div key={index} className="flex items-start gap-3 p-2 md:p-3 bg-sidebar-accent rounded-lg">
-                        <item.icon className="h-4 w-4 text-sidebar-accent-foreground mt-0.5 flex-shrink-0" />
+              {/* Live Feed */}
+              <div className="space-y-4">
+                <h3 className="text-base md:text-lg font-semibold">Live Feed</h3>
+                <div className="space-y-3">
+                  {liveFeedItems.map((item, index) => {
+                    const disasterColors: Record<string, string> = {
+                      flood: 'var(--disaster-flood)',
+                      wildfire: 'var(--disaster-fire)',
+                      earthquake: 'var(--disaster-earthquake)',
+                      storm: 'var(--disaster-storm)',
+                      landslide: 'var(--disaster-landslide)',
+                      critical: 'var(--critical)',
+                    }
+                    const bgColor = disasterColors[item.type?.toLowerCase()] || 'var(--sidebar-accent)'
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 p-2 md:p-3 rounded-lg"
+                        style={{ backgroundColor: bgColor, color: 'var(--sidebar-accent-foreground)' }}
+                      >
+                        <item.icon className="h-4 w-4 mt-0.5 flex-shrink-0 text-[var(--sidebar-accent-foreground)]" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs md:text-sm text-sidebar-accent-foreground">{item.text}</p>
-                          <p className="text-xs text-sidebar-accent-foreground/70 mt-1">{item.time}</p>
+                          <p className="text-xs md:text-sm">{item.text}</p>
+                          <p className="text-xs opacity-70 mt-1">{item.time}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
               </div>
             </div>
-          </aside>
+          </div>
+        </aside>
+      
 
           {/* Main Content - 70% width when sidebar is open, 100% when closed */}
           <div
@@ -370,18 +407,23 @@ export default function DisasterDashboard() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-card border-border sm:col-span-2 lg:col-span-1">
+                <Card className="bg-[var(--card)] border border-[var(--border)] sm:col-span-2 lg:col-span-1 text-[var(--card-foreground)]">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                    <CardTitle className="text-xs md:text-sm font-medium">
                       Resources Deployed
                     </CardTitle>
-                    <ShieldCheck className="h-4 w-4 text-accent" />
+                    <ShieldCheck className="h-4 w-4 text-[var(--accent)]" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-xl md:text-2xl font-bold text-accent">78</div>
-                  </CardContent>
-                </Card>
-              </div>
+                    <div
+                     className="text-xl md:text-2xl font-bold"
+                     style={{color: 'var(--stat-resources-number)' }}
+                  >
+                    78
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
               {/* Interactive Map */}
               <Card className="bg-card border-border">
@@ -417,7 +459,7 @@ export default function DisasterDashboard() {
               </Card>
 
               {/* Affected Areas List */}
-              <Card className="bg-card border-border">
+              <Card className="bg-[var(--card)] border border-[var(--border)] text-[var(--card-foreground)]">
                 <CardHeader>
                   <CardTitle className="text-base md:text-lg">Affected Areas</CardTitle>
                 </CardHeader>
@@ -426,12 +468,31 @@ export default function DisasterDashboard() {
                     { city: "Kuala Lumpur", disaster: "Flood" },
                     { city: "Selangor", disaster: "Wildfire" },
                     { city: "Penang", disaster: "Earthquake" },
-                  ].map((d, i) => (
+                  ].map((d, i) => {
+                    const disasterColors: Record<string, string> = {
+                      flood: 'var(--disaster-flood)',
+                      wildfire: 'var(--disaster-fire)',
+                      earthquake: 'var(--disaster-earthquake)',
+                      storm: 'var(--disaster-storm)',
+                      landslide: 'var(--disaster-landslide)',
+                  }
+
+                  const bgColor = disasterColors[d.disaster?.toLowerCase()] || 'var(--accent)'
+
+                  return (
                     <div key={i} className="flex items-center justify-between">
                       <span>{d.city}</span>
-                      <Badge>{d.disaster}</Badge>
+                      <Badge
+                        style={{
+                          backgroundColor: bgColor,
+                          color: 'white',
+                          }}
+                      >
+                        {d.disaster}
+                        </Badge>
                     </div>
-                  ))}
+                  )
+                })}
                 </CardContent>
               </Card>
             </main>

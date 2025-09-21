@@ -3,6 +3,8 @@ import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import '../styles/globals.css';
+
 
 export const metadata: Metadata = {
   title: 'v0 App',
@@ -16,8 +18,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className="dark"> {/* Remove "dark" if you use a theme toggle */}
+      <body
+        className={`font-sans ${GeistSans.variable} ${GeistMono.variable} bg-[var(--background-gradient)] text-[var(--foreground)]`}
+      >
         {children}
         <Analytics />
       </body>
