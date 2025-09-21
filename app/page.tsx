@@ -486,6 +486,67 @@ export default function DisasterDashboard() {
                       </Button>
                     </div>
                   </div>
+
+                  {/* Map Legend */}
+                  <div className="mt-4 p-4 bg-card/50 backdrop-blur-sm rounded-lg border border-border">
+                    <h4 className="text-sm font-semibold mb-3 text-card-foreground">Legend</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Disaster Type Abbreviations */}
+                      <div>
+                        <h5 className="text-xs font-medium mb-2 text-muted-foreground">Disaster Types</h5>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">TC</span>
+                            <span>=</span>
+                            <span>Tropical Cyclone (Hurricane)</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">EQ</span>
+                            <span>=</span>
+                            <span>Earthquake</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">FL</span>
+                            <span>=</span>
+                            <span>Flood</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">VO</span>
+                            <span>=</span>
+                            <span>Volcano</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="font-mono font-bold">DR</span>
+                            <span>=</span>
+                            <span>Drought</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Color Codes */}
+                      <div>
+                        <h5 className="text-xs font-medium mb-2 text-muted-foreground">Severity Colors</h5>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
+                            <span>Critical (Red)</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                            <span>High (Blue)</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }}></div>
+                            <span>Moderate (Orange)</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
+                            <span>Low (Green)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
