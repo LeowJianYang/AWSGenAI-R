@@ -31,10 +31,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import axios from "axios"
 import DisasterSearch from '@/components/ui/DisasterSearch'
 import '../styles/globals.css';
+import { useRouter } from "next/navigation"
+
+
+
+type DisasterData = {
+  title: string,
+  pubDate: string,
+  eventid: string,
+  location: string;
+  eventtype: string;
+  alertlevel: string;
+  level: {
+    unit: string;
+    value: number;
+  };
+}
 import type { DisasterData } from "@/app/disaster";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import DisasterAnalysisPage from "@/app/Disaster-Analysis-Page/page"
+
 
 export default function DisasterDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -45,8 +62,10 @@ export default function DisasterDashboard() {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState("")
   const [LastUpdated, setLastUpdated] = useState<number>(0);
+  const router= useRouter();
   const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
   const [mapFocus, setMapFocus] = useState<{ lat: number; lon: number } | null>(null);
+
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -211,7 +230,9 @@ export default function DisasterDashboard() {
               <div className="absolute -top-1 -right-1 h-2 w-2 md:h-3 md:w-3 bg-primary rounded-full"></div>
             </div>
             <div className="h-6 w-6 md:h-8 md:w-8 bg-muted rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+              <User className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground"  onClick={()=>{
+                router.push('/auth/login')
+              }}/>
             </div>
           </div>
         </header>
