@@ -4,6 +4,8 @@ import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import '../styles/globals.css';
+import '@aws-amplify/ui-react/styles.css';
+
 
 
 export const metadata: Metadata = {
