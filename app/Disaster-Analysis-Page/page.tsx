@@ -10,26 +10,43 @@ import EventDetailsGrid from "./components/EventDetailsGrid"
 export default function DisasterAnalysisPage() {
   const [disType, setDisType] = useState("EQ")
   const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    axios.get(`/api/disaster?disType=${disType}`).then((res) => {
-      setData(res.data)
-    })
+    setLoading(true)
+    axios.get(`/api/disaster?disType=${disType}`)
+      .then((res) => {
+        console.log("[DEBUG] Fetched data:", res.data)
+        setData(res.data)
+      })
+      .catch((err) => {
+        console.error("[ERROR] Failed to fetch disaster data:", err)
+        setData([])
+      })
+      .finally(() => setLoading(false))
   }, [disType])
 
   const totalEvents = data.length
-  const avgSeverity =
-    data.reduce((sum, d) => {
-      const val = typeof d.severity === "object" ? d.severity.value : 0
-      return sum + val
-    }, 0) / (data.length || 1)
+
+  const avgSeverity = totalEvents
+    ? data.reduce((sum, d) => {
+        const val = Number(d?.severity?.value) || 0
+        return sum + val
+      }, 0) / totalEvents
+    : 0
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8 space-y-10">
       <FilterBar value={disType} onChange={setDisType} />
       <SummaryStats total={totalEvents} average={avgSeverity} />
-      <GraphSection data={data} />
-      <EventDetailsGrid data={data} />
+      {loading ? (
+        <p className="text-muted-foreground text-sm">Loading disaster data...</p>
+      ) : (
+        <>
+          <GraphSection data={data.filter(d => d.latitude && d.longitude)} />
+          <EventDetailsGrid data={data} />
+        </>
+      )}
     </main>
   )
 }
