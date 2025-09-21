@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Bell,
   Menu,
@@ -17,6 +17,10 @@ import {
   Building,
   Sun,
   Moon,
+  RefreshCcw,
+  Search,
+  MessageCircle,
+  Send
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,30 +28,70 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import dynamic from "next/dynamic";
+import axios from "axios"
+
+type DisasterData = {
+  title: string,
+  pubDate: string,
+  eventid: string,
+  location: string;
+  eventtype: string;
+  alertlevel: string;
+  level: {
+    unit: string;
+    value: number;
+  };
+}
 
 export default function DisasterDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false) // Default to closed for both mobile and desktop
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [selectedIncident, setSelectedIncident] = useState<any>(null)
   const [mapZoom, setMapZoom] = useState(1)
-  const [isDarkMode, setIsDarkMode] = useState(true) // Added theme state
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatInput, setChatInput] = useState("")
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: "Hello! I'm your AI assistant for disaster response. How can I help you today?",
+      isAI: true,
+      timestamp: "Just now"
+    }
+  ])
+  const sidebarRef = useRef<HTMLDivElement>(null)
+  const DisasterMap = dynamic(() => import("@/components/ui/DisasterMap"), {
+    ssr: false,
+  });
 
   useEffect(() => {
-    // Apply initial theme class
     if (isDarkMode) {
       document.documentElement.classList.add("dark")
     } else {
       document.documentElement.classList.remove("dark")
     }
-  }, [])
+  }, [isDarkMode])
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarOpen && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target as Node) &&
+          !(event.target as Element).closest('button[aria-label="Open menu"]')) {
+        setSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [sidebarOpen])
 
   const toggleTheme = () => {
-    const newTheme = !isDarkMode
-    setIsDarkMode(newTheme)
-    if (newTheme) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
+    setIsDarkMode(!isDarkMode)
   }
 
   const liveFeedItems = [
@@ -67,13 +111,63 @@ export default function DisasterDashboard() {
     description: "A multi-story residential building is on fire. Emergency services are on site.",
   }
 
+  const handleRefreshStatus = async () => {
+    axios.get('/api/disaster').then((response) => {
+      const mapData = response.data.map((item: any) => ({
+        title: item.title,
+        pubDate: item.pubDate,
+        eventid: item.eventid,
+        location: item.country,
+        eventType: item.eventtype,
+        alertLevel: item.alertlevel,
+        level: {
+          unit: item.severity["$"].unit,
+          value: item.severity["$"].value,
+        },
+      }));
+      console.log("[DEBUG]", mapData);
+      setDisasterData(mapData);
+    });
+  }
+
+  const handleSendMessage = () => {
+    if (chatInput.trim()) {
+      const now = new Date()
+      const newMessage = {
+        id: messages.length + 1,
+        text: chatInput,
+        isAI: false,
+        timestamp: now.toLocaleTimeString()
+      }
+      setMessages([...messages, newMessage])
+      setChatInput("")
+      
+      // Simulate AI response after a delay
+      setTimeout(() => {
+        const aiResponseTime = new Date()
+        const aiResponse = {
+          id: messages.length + 2,
+          text: "Thank you for your message. I'm here to help with disaster response information. Could you please provide more details about what you need assistance with?",
+          isAI: true,
+          timestamp: aiResponseTime.toLocaleTimeString()
+        }
+        setMessages(prev => [...prev, aiResponse])
+      }, 1000)
+    }
+  }
+
   return (
     <div className={`min-h-screen ${isDarkMode ? "dark" : ""}`}>
       <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
         <header className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2 md:gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setSidebarOpen(!sidebarOpen); handleRefreshStatus() }}
+              aria-label="Open menu"
+            >
               <Menu className="h-5 w-5" />
             </Button>
             <Shield className="h-6 w-6 md:h-8 md:w-8 text-primary" />
@@ -98,31 +192,53 @@ export default function DisasterDashboard() {
         </header>
 
         <div className="flex relative">
-          {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />}
-
-          {/* Sidebar - Now drawer for both mobile and desktop */}
+          {/* Sidebar - Fixed on the left side, 30% width when open */}
           <aside
-            className={`${
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            } fixed z-50 w-80 transition-transform duration-300 bg-sidebar border-r border-sidebar-border flex flex-col h-[calc(100vh-73px)]`}
+            ref={sidebarRef}
+            className={`
+              fixed inset-y-0 left-0 z-50 h-[calc(100vh-73px)] mt-[73px] transition-all duration-300 ease-in-out
+              bg-sidebar text-sidebar-foreground overflow-y-auto border-r border-sidebar-border
+              ${sidebarOpen ? 'translate-x-0 w-[30%]' : '-translate-x-full w-0'}
+            `}
           >
             <div className="flex-1 overflow-y-auto">
               <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-                <div className="flex justify-end">
+                <div className="flex justify-end flex-row">
                   <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
                     <X className="h-5 w-5" />
                   </Button>
+
+                  <Button variant="ghost" size="sm" onClick={() => handleRefreshStatus()}>
+                    <RefreshCcw className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="search"
+                    placeholder="Search incidents..."
+                    className="w-full bg-background pl-8 p-2 rounded-md border border-border"
+                  />
                 </div>
 
                 {/* Active Disaster Section */}
                 <div className="space-y-3">
                   <h2 className="text-base md:text-lg font-semibold text-sidebar-foreground">Active Disaster</h2>
                   <div className="space-y-2">
-                    <h3 className="text-lg md:text-xl font-bold text-sidebar-foreground">California Wildfires</h3>
-                    <p className="text-xs md:text-sm text-sidebar-foreground/80">Updated: 18 Sept 2025, 05:04 AM</p>
-                    <Badge variant="destructive" className="bg-primary text-primary-foreground text-xs">
-                      Critical
-                    </Badge>
+                    {disasterData.slice(0, 3).map((item, idx) =>
+                      idx < 3 ? (
+                        <div key={idx} className="mb-4">
+                          <h3 className="text-lg md:text-xl font-bold text-sidebar-foreground">{item.title}</h3>
+                          <p className="text-xs md:text-sm text-sidebar-foreground/80">Updated At: {item.pubDate}</p>
+                          <p className="text-xs md:text-sm text-sidebar-foreground/80">Severity: {item.level.unit} {item.level.value}</p>
+                          <Badge variant="destructive" className="bg-primary text-primary-foreground text-xs">
+                            Critical
+                          </Badge>
+                        </div>
+                      ) : null
+                    )}
                   </div>
                 </div>
 
@@ -199,111 +315,200 @@ export default function DisasterDashboard() {
             </div>
           </aside>
 
-          {/* Main Content - Now takes full width when drawer is closed */}
-          <main className="flex-1 p-3 md:p-6 space-y-4 md:space-y-6 min-w-0">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+          {/* Main Content - 70% width when sidebar is open, 100% when closed */}
+          <div
+            className={`
+              transition-all duration-300 min-h-[calc(100vh-73px)]
+              ${sidebarOpen ? 'w-[70%] ml-[30%]' : 'w-full ml-0'}
+            `}
+            onClick={() => {
+              if (sidebarOpen) {
+                setSidebarOpen(false)
+              }
+            }}
+          >
+            <main className="p-3 md:p-6 space-y-4 md:space-y-6 min-w-0">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                <Card className="bg-card border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                      Estimated Affected
+                    </CardTitle>
+                    <Users className="h-4 w-4 text-card-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl md:text-2xl font-bold text-card-foreground">14,830</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                      Active Incidents
+                    </CardTitle>
+                    <AlertTriangle className="h-4 w-4 text-primary" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl md:text-2xl font-bold text-primary">215</div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border sm:col-span-2 lg:col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
+                      Resources Deployed
+                    </CardTitle>
+                    <ShieldCheck className="h-4 w-4 text-accent" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xl md:text-2xl font-bold text-accent">78</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Interactive Map */}
               <Card className="bg-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
-                    Estimated Affected
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-card-foreground" />
+                <CardHeader className="p-3 md:p-6">
+                  <CardTitle className="text-base md:text-lg text-card-foreground">Disaster Response Map</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-xl md:text-2xl font-bold text-card-foreground">14,830</div>
-                </CardContent>
-              </Card>
+                <CardContent className="p-3 md:p-6 pt-0">
+                  <div className="relative">
+                    {/* Map Component */}
+                    <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden">
+                      <DisasterMap zoom={mapZoom * 10} />
+                    </div>
 
-              <Card className="bg-card border-border">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
-                    Active Incidents
-                  </CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl md:text-2xl font-bold text-primary">215</div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-card border-border sm:col-span-2 lg:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xs md:text-sm font-medium text-card-foreground">
-                    Resources Deployed
-                  </CardTitle>
-                  <ShieldCheck className="h-4 w-4 text-accent" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl md:text-2xl font-bold text-accent">78</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Interactive Map */}
-            <Card className="bg-card border-border">
-              <CardHeader className="p-3 md:p-6">
-                <CardTitle className="text-base md:text-lg text-card-foreground">Disaster Response Map</CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 md:p-6 pt-0">
-                <div className="relative">
-                  {/* Map Placeholder */}
-                  <div
-                    className="w-full h-64 md:h-96 bg-muted rounded-lg flex items-center justify-center relative overflow-hidden"
-                    style={{ transform: `scale(${mapZoom})`, transformOrigin: "center" }}
-                  >
-                    <div className="text-muted-foreground text-sm md:text-lg font-medium">Map Placeholder</div>
-
-                    {/* Mock Map Pins */}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-12 md:top-20 left-16 md:left-32 h-6 w-6 md:h-8 md:w-8 rounded-full p-0"
-                      onClick={() => setSelectedIncident(mockIncident)}
-                    >
-                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
-
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="absolute top-24 md:top-40 right-20 md:right-40 h-6 w-6 md:h-8 md:w-8 rounded-full p-0 bg-secondary text-secondary-foreground"
-                    >
-                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
-
-                    <Button
-                      className="absolute bottom-12 md:bottom-20 left-10 md:left-20 h-6 w-6 md:h-8 md:w-8 rounded-full p-0 bg-accent text-accent-foreground"
-                      size="sm"
-                    >
-                      <MapPin className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
+                    {/* Map Controls */}
+                    <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col gap-1 md:gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMapZoom(Math.min(mapZoom + 1, 18))}
+                      >
+                        <Plus className="h-3 w-3 md:h-4 md:w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMapZoom(Math.max(mapZoom - 1, 1))}
+                      >
+                        <Minus className="h-3 w-3 md:h-4 md:w-4" />
+                      </Button>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  {/* Map Controls */}
-                  <div className="absolute top-2 md:top-4 right-2 md:right-4 flex flex-col gap-1 md:gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setMapZoom(Math.min(mapZoom + 0.2, 2))}
-                      className="h-6 w-6 md:h-8 md:w-8 p-0"
-                    >
-                      <Plus className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setMapZoom(Math.max(mapZoom - 0.2, 0.5))}
-                      className="h-6 w-6 md:h-8 md:w-8 p-0"
-                    >
-                      <Minus className="h-3 w-3 md:h-4 md:w-4" />
-                    </Button>
+              {/* Affected Areas List */}
+              <Card className="bg-card border-border">
+                <CardHeader>
+                  <CardTitle className="text-base md:text-lg">Affected Areas</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {[
+                    { city: "Kuala Lumpur", disaster: "Flood" },
+                    { city: "Selangor", disaster: "Wildfire" },
+                    { city: "Penang", disaster: "Earthquake" },
+                  ].map((d, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span>{d.city}</span>
+                      <Badge>{d.disaster}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </main>
+          </div>
+        </div>
+
+        {/* Floating Chat Button */}
+        <button
+          onClick={() => setChatOpen(!chatOpen)}
+          className="fixed bottom-6 right-6 z-[999] w-14 h-14 bg-primary hover:bg-primary/90 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105"
+        >
+          <MessageCircle className="h-6 w-6 text-primary-foreground" />
+        </button>
+
+        {/* Chat Panel - Slides in from right */}
+        <div
+          className={`
+            fixed top-0 right-0 h-full w-full sm:w-96 bg-card border-l border-border z-[9998] 
+            transform transition-transform duration-300 ease-in-out
+            ${chatOpen ? 'translate-x-0' : 'translate-x-full'}
+          `}
+        >
+          {/* Chat Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+            <h2 className="text-lg font-bold text-card-foreground">Disaster AI Assistant</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setChatOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Chat Content */}
+          <div className="flex flex-col" style={{ height: 'calc(100% - 73px)' }}>
+            {/* Messages Area */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.isAI ? 'justify-start' : 'justify-end'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.isAI
+                        ? 'bg-muted text-muted-foreground'
+                        : 'bg-primary text-primary-foreground'
+                    }`}
+                  >
+                    <p className="text-sm">{message.text}</p>
+                    {message.timestamp !== "Just now" && (
+                      <p className="text-xs opacity-70 mt-1">
+                        {message.timestamp}
+                      </p>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </main>
+              ))}
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-border bg-card">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Ask me anything about disaster response..."
+                  className="flex-1 p-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <Button 
+                  size="sm" 
+                  className="px-3"
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Overlay when chat is open */}
+        {chatOpen && (
+          <div
+            className="fixed inset-0 bg-black/20 z-[9997]"
+            onClick={() => setChatOpen(false)}
+          />
+        )}
 
         {/* Incident Detail Modal */}
         <Dialog open={!!selectedIncident} onOpenChange={() => setSelectedIncident(null)}>
