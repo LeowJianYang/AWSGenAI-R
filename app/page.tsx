@@ -33,20 +33,6 @@ import DisasterSearch from '@/components/ui/DisasterSearch'
 import '../styles/globals.css';
 import { useRouter } from "next/navigation"
 
-
-
-type DisasterData = {
-  title: string,
-  pubDate: string,
-  eventid: string,
-  location: string;
-  eventtype: string;
-  alertlevel: string;
-  level: {
-    unit: string;
-    value: number;
-  };
-}
 import type { DisasterData } from "@/app/disaster";
 import Link from "next/link";
 import dynamic from "next/dynamic";
