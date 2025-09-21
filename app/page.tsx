@@ -31,8 +31,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import dynamic from "next/dynamic";
 import axios from "axios"
 import '../styles/globals.css';
-
-
+import Link from "next/link"
+import DisasterAnalysisPage from "@/app/Disaster-Analysis-Page/page"
 
 
 type DisasterData = {
@@ -50,6 +50,7 @@ type DisasterData = {
 
 export default function DisasterDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [analysisOpen, setAnalysisOpen] = useState(false)
   const [selectedIncident, setSelectedIncident] = useState<any>(null)
   const [mapZoom, setMapZoom] = useState(1)
   const [isDarkMode, setIsDarkMode] = useState(true)
@@ -182,6 +183,7 @@ export default function DisasterDashboard() {
         {/* Header */}
         <header className="flex items-center justify-between p-3 md:p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2 md:gap-3">
+            {/* Left Side: menu + logo */}
             <Button
               variant="ghost"
               size="sm"
@@ -201,6 +203,18 @@ export default function DisasterDashboard() {
                 <Moon className="h-5 w-5 md:h-6 md:w-6 text-card-foreground" />
               )}
             </Button>
+
+            {/* Emergency Procedures Button */}
+            <Link href="/emergency-procedures" >
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-[var(--critical)] text-[var(--critical-foreground)] hover:brightness-110 animate-pulse"
+                >
+                🚨 Procedures
+              </Button>
+            </Link>
+
             <div className="relative">
               <Bell className="h-5 w-5 md:h-6 md:w-6 text-card-foreground" />
               <div className="absolute -top-1 -right-1 h-2 w-2 md:h-3 md:w-3 bg-primary rounded-full"></div>
@@ -276,6 +290,15 @@ export default function DisasterDashboard() {
                     )
                   })}
                 </div>
+              </div>
+
+              <div className="sticky bottom-4 z-10">
+                <Link href="/emergency-procedures" >
+                  <Button className="w-full bg-[var(--critical)] text-[var(--critical-foreground)] hoverbrightness-110 transition text-sm font-semibold animate-pulse"
+                  >
+                    🚨Emergency Procedures
+                  </Button>
+                </Link>
               </div>
 
                 {/* Map Filters & Layers */}
@@ -425,6 +448,15 @@ export default function DisasterDashboard() {
               </Card>
             </div>
 
+            <div className="mt-4">
+              <Button onClick={()=> setAnalysisOpen(true)} 
+              variant="default"
+              className="w-full sm:w-auto px-6 py-3 text-sm font-semibold"
+              >
+                Open Disaster Analysis Dashboard
+              </Button>
+            </div>
+
               {/* Interactive Map */}
               <Card className="bg-card border-border">
                 <CardHeader className="p-3 md:p-6">
@@ -499,6 +531,22 @@ export default function DisasterDashboard() {
           </div>
         </div>
 
+    {analysisOpen && (
+      <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+        <div className="w-full max-w-4xl h-full bg-background shadow-xl overflow-y-auto border-l border-border animate-slide-in">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <h2 className="text-lg font-semibold">📊 Disaster Analysis Dashboard</h2>
+            <Button variant="ghost" size="icon" onClick={() => setAnalysisOpen(false)}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          <div className="p-6">
+            <DisasterAnalysisPage />
+          </div>
+        </div>
+      </div>
+    )}3333333333333
+    
         {/* Floating Chat Button */}
         <button
           onClick={() => setChatOpen(!chatOpen)}
