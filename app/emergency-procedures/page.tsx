@@ -1,3 +1,5 @@
+'use client'
+
 import EmergencyContact from "./components/EmergencyContactCards"
 import DisasterType from "./components/DisasterTypeGrid"
 import QuickActions from "./components/QuickActions"
