@@ -72,7 +72,15 @@ export default function DisasterMap({ zoom = 2, data, focus }: DisasterMapProps)
             pathOptions={{ color, fillColor: color, fillOpacity: 0.7, weight: 3 }}
           >
             <Popup>
-              <h3 className="font-bold">{d.location}</h3>
+              <h3 className="font-bold">
+                {d.location && d.location.trim()
+                  ? d.location
+                  : (() => {
+                      const match = d.title.match(/in ([A-Za-z ]+)/);
+                      return match ? match[1].trim() : "Unknown Country";
+                    })()
+                }
+              </h3>
               <p>
                 <span
                   style={{
@@ -87,7 +95,6 @@ export default function DisasterMap({ zoom = 2, data, focus }: DisasterMapProps)
                   {d.eventtype}
                 </span>
               </p>
-              <p>Severity: {d.level ? `${d.level.unit} ${d.level.value}` : "N/A"}</p>
               <p>Alert: {d.alertlevel}</p>
             </Popup>
           </Circle>

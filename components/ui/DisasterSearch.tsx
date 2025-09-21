@@ -91,6 +91,7 @@ export default function DisasterSearch() {
       case 'TC': return 'hurricane'
       case 'FL': return 'flood'
       case 'VO': return 'volcano'
+      case 'DR': return 'drought'
       default: return code?.toLowerCase() || 'other'
     }
   }
