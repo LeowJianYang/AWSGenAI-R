@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import dynamic from "next/dynamic";
 import axios from "axios"
+import DisasterSearch from '@/components/ui/DisasterSearch'
 
 type DisasterData = {
   title: string,
@@ -229,15 +230,7 @@ export default function DisasterDashboard() {
                   </Button>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="search"
-                    placeholder="Search incidents..."
-                    className="w-full bg-background pl-8 p-2 rounded-md border border-border"
-                  />
-                </div>
+                <DisasterSearch />
 
                 {/* Active Disaster Section */}
                 <div className="space-y-3">
