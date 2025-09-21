@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 import { parseStringPromise } from "xml2js";
+import { parse } from "path";
 
 // GET /api/disaster (?disType= EQ, TC, FL, VO, SE)
 
@@ -36,8 +37,7 @@ export async function GET(request){
 
     const filtered = type ? items.filter((it)=> it['gdacs:eventtype'] === type) : items;
 
-    const mapped = filtered.map((it)=> ({
-
+    const mapped = filtered.map((it) => ({
         title: it.title,
         pubDate: it.pubDate,
         eventtype: it['gdacs:eventtype'],
@@ -45,7 +45,10 @@ export async function GET(request){
         country: it['gdacs:country'],
         severity: it['gdacs:severity'] || "N/A",
         cap: it['gdacs:cap'],
-        eventid: it['gdacs:eventid'] 
+        eventid: it['gdacs:eventid'],
+        lat: parseFloat(it["geo:Point"]?.["geo:lat"]) || 0,
+        long: parseFloat(it["geo:Point"]?.["geo:long"]) || 0,
+        enclosure: it.enclosure?.["$"]?.url || null
     }));
 
     return NextResponse.json(mapped);
