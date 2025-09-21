@@ -28,26 +28,13 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import dynamic from "next/dynamic";
 import axios from "axios"
 import DisasterSearch from '@/components/ui/DisasterSearch'
 import '../styles/globals.css';
-import Link from "next/link"
+import type { DisasterData } from "@/app/disaster";
+import Link from "next/link";
+import dynamic from "next/dynamic";
 import DisasterAnalysisPage from "@/app/Disaster-Analysis-Page/page"
-
-
-type DisasterData = {
-  title: string,
-  pubDate: string,
-  eventid: string,
-  location: string;
-  eventtype: string;
-  alertlevel: string;
-  level: {
-    unit: string;
-    value: number;
-  };
-}
 
 export default function DisasterDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -55,10 +42,11 @@ export default function DisasterDashboard() {
   const [selectedIncident, setSelectedIncident] = useState<any>(null)
   const [mapZoom, setMapZoom] = useState(1)
   const [isDarkMode, setIsDarkMode] = useState(true)
-  const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState("")
   const [LastUpdated, setLastUpdated] = useState<number>(0);
+  const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
+  const [mapFocus, setMapFocus] = useState<{ lat: number; lon: number } | null>(null);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -137,12 +125,14 @@ export default function DisasterDashboard() {
         pubDate: item.pubDate,
         eventid: item.eventid,
         location: item.country,
-        eventType: item.eventtype,
-        alertLevel: item.alertlevel,
+        eventtype: item.eventtype,
+        alertlevel: item.alertlevel,
         level: {
-          unit: item.severity["$"].unit,
-          value: item.severity["$"].value,
+          unit: item.severity?.["$"]?.unit || "N/A",
+          value: item.severity?.["$"]?.value || 0,
         },
+        lat: item.lat ? parseFloat(item.lat) : undefined,   // ✅ ensure number
+        lon: item.lon ? parseFloat(item.lon) : undefined,   // ✅ ensure number
       }));
       console.log("[DEBUG]", mapData);
       setDisasterData(mapData);
@@ -277,7 +267,7 @@ export default function DisasterDashboard() {
                           <h3 className="text-lg md:text-xl font-bold text-white">{item.title}</h3>
                           <p className="text-xs md:text-sm text-white/80">Updated At: {item.pubDate}</p>
                           <p className="text-xs md:text-sm text-white/80">
-                            Severity: {item.level.unit} {item.level.value}
+                            Severity: {item.level?.unit} {item.level?.value}
                           </p>
                           <Badge
                             className="text-xs mt-2"
@@ -468,7 +458,14 @@ export default function DisasterDashboard() {
                   <div className="relative">
                     {/* Map Component */}
                     <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden">
-                      <DisasterMap zoom={mapZoom * 10} />
+                      <div className="w-full h-64 md:h-96 rounded-lg overflow-hidden">
+                        {/* Use a safe zoom value for Leaflet (2-6) */}
+                        <DisasterMap 
+                          zoom={mapZoom < 2 ? 2 : mapZoom > 18 ? 18 : mapZoom} 
+                          data={disasterData} 
+                          focus={mapFocus} 
+                        />
+                      </div>
                     </div>
 
                     {/* Map Controls */}
@@ -497,36 +494,94 @@ export default function DisasterDashboard() {
                 <CardHeader>
                   <CardTitle className="text-base md:text-lg">Affected Areas</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {[
-                    { city: "Kuala Lumpur", disaster: "Flood" },
-                    { city: "Selangor", disaster: "Wildfire" },
-                    { city: "Penang", disaster: "Earthquake" },
-                  ].map((d, i) => {
-                    const disasterColors: Record<string, string> = {
-                      flood: 'var(--disaster-flood)',
-                      wildfire: 'var(--disaster-fire)',
-                      earthquake: 'var(--disaster-earthquake)',
-                      storm: 'var(--disaster-storm)',
-                      landslide: 'var(--disaster-landslide)',
-                  }
+                <CardContent className="grid gap-3 md:grid-cols-2">
+                  {disasterData.map((d, i) => {
+                    // Robust severity color logic
+                    function normalizeSeverity(val: string | undefined): string {
+                      if (!val) return "unknown";
+                      const v = val.toString().trim().toLowerCase();
+                      if (["critical", "red"].includes(v)) return "critical";
+                      if (["high"].includes(v)) return "high";
+                      if (["moderate", "medium", "orange", "orangered", "yellow"].includes(v)) return "moderate";
+                      if (["low", "green"].includes(v)) return "low";
+                      return "unknown";
+                    }
+                    const severityColors: Record<string, string> = {
+                      critical: "#ef4444", // red-500
+                      high: "#3b82f6", // blue-500
+                      moderate: "#f97316", // orange-500 (more visible)
+                      low: "#22c55e", // green-500
+                      unknown: "#a3a3a3", // gray-400
+                    };
+                    const severityBg: Record<string, string> = {
+                      critical: "#fee2e2", // red-100
+                      high: "#dbeafe", // blue-100
+                      moderate: "#fed7aa", // orange-200 (more visible)
+                      low: "#dcfce7", // green-100
+                      unknown: "#f3f4f6", // gray-100
+                    };
+                    const level = normalizeSeverity(d.alertlevel);
+                    const bgColor = severityBg[level];
+                    const textColor = severityColors[level];
 
-                  const bgColor = disasterColors[d.disaster?.toLowerCase()] || 'var(--accent)'
-
-                  return (
-                    <div key={i} className="flex items-center justify-between">
-                      <span>{d.city}</span>
-                      <Badge
-                        style={{
-                          backgroundColor: bgColor,
-                          color: 'white',
-                          }}
+                    return (
+                      <div
+                        key={i}
+                        onClick={async () => {
+                          console.log('[AffectedArea] Clicked:', d);
+                          if (d.lat !== undefined && d.lon !== undefined) {
+                            console.log('[AffectedArea] Navigating to:', d.lat, d.lon);
+                            setMapFocus({ lat: d.lat, lon: d.lon });
+                            setMapZoom(8);
+                          } else if (d.location && d.location.trim()) {
+                            // Geocode location using OpenStreetMap Nominatim
+                            try {
+                              const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(d.location)}`);
+                              const results = await response.json();
+                              if (results && results.length > 0) {
+                                const lat = parseFloat(results[0].lat);
+                                const lon = parseFloat(results[0].lon);
+                                console.log('[AffectedArea] Geocoded:', lat, lon);
+                                setMapFocus({ lat, lon });
+                                setMapZoom(6);
+                              } else {
+                                console.warn('[AffectedArea] Geocoding failed for:', d.location);
+                              }
+                            } catch (err) {
+                              console.error('[AffectedArea] Geocoding error:', err);
+                            }
+                          } else {
+                            console.warn('[AffectedArea] No valid coordinates or location for:', d.title);
+                          }
+                        }}
+                        className="cursor-pointer p-4 rounded-lg shadow-md hover:shadow-lg transition"
+                        style={{ backgroundColor: bgColor, color: textColor }}
                       >
-                        {d.disaster}
+                        {/* Country as main title */}
+                        <h3 className="font-bold text-lg mb-1">
+                          {d.location && d.location.trim()
+                            ? d.location
+                            : (() => {
+                                // Try to extract country from title, e.g. "Flood in Greece: ..."
+                                const match = d.title.match(/in ([A-Za-z ]+)/);
+                                return match ? match[1].trim() : "Unknown Country";
+                              })()
+                          }
+                        </h3>
+                        {/* Disaster type as colored badge */}
+                        <span
+                          className="inline-block px-2 py-1 rounded-full text-xs font-semibold mb-2"
+                          style={{ backgroundColor: textColor, color: "#fff" }}
+                        >
+                          {d.eventtype?.charAt(0).toUpperCase() + d.eventtype?.slice(1)}
+                        </span>
+                        {/* Alert level badge */}
+                        <Badge className="mt-2 bg-black/20 text-white font-semibold">
+                          {d.alertlevel}
                         </Badge>
-                    </div>
-                  )
-                })}
+                      </div>
+                    );
+                  })}
                 </CardContent>
               </Card>
             </main>
