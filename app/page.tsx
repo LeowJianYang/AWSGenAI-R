@@ -47,6 +47,7 @@ export default function DisasterDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [chatOpen, setChatOpen] = useState(false)
   const [chatInput, setChatInput] = useState("")
+  const [isAITyping, setIsAITyping] = useState(false)
   const [LastUpdated, setLastUpdated] = useState<number>(0);
   const router= useRouter();
   const [disasterData, setDisasterData] = useState<DisasterData[]>([]);
@@ -157,6 +158,9 @@ export default function DisasterDashboard() {
       setMessages([...messages, newMessage])
       setChatInput("")
       
+      // Show typing indicator
+      setIsAITyping(true)
+      
       // Simulate AI response after a delay
       setTimeout(() => {
         const aiResponseTime = new Date()
@@ -167,7 +171,19 @@ export default function DisasterDashboard() {
             isAI: true,
             timestamp: aiResponseTime.toLocaleTimeString()
           }
+          setIsAITyping(false) // Hide typing indicator
           setMessages(prev => [...prev, aiResponse])
+        }).catch((error) => {
+          // Handle error case
+          const errorResponse = {
+            id: messages.length + 2,
+            text: "Sorry, I'm having trouble responding right now. Please try again later.",
+            isAI: true,
+            timestamp: aiResponseTime.toLocaleTimeString()
+          }
+          setIsAITyping(false) // Hide typing indicator
+          setMessages(prev => [...prev, errorResponse])
+          console.error("Chat API error:", error)
         })
       }, 1000)
     }
@@ -726,6 +742,22 @@ export default function DisasterDashboard() {
                   </div>
                 </div>
               ))}
+              
+              {/* Typing Indicator */}
+              {isAITyping && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] p-3 rounded-lg bg-muted text-muted-foreground">
+                    <div className="flex items-center space-x-1">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-current rounded-full typing-dot"></div>
+                        <div className="w-2 h-2 bg-current rounded-full typing-dot"></div>
+                        <div className="w-2 h-2 bg-current rounded-full typing-dot"></div>
+                      </div>
+                      <span className="text-xs ml-2 opacity-70">AI is typing...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Input Area */}
@@ -735,15 +767,16 @@ export default function DisasterDashboard() {
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Ask me anything about disaster response..."
-                  className="flex-1 p-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  onKeyPress={(e) => e.key === 'Enter' && !isAITyping && handleSendMessage()}
+                  placeholder={isAITyping ? "AI is responding..." : "Ask me anything about disaster response..."}
+                  className="flex-1 p-2 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  disabled={isAITyping}
                 />
                 <Button 
                   size="sm" 
                   className="px-3"
                   onClick={handleSendMessage}
-                  disabled={!chatInput.trim()}
+                  disabled={!chatInput.trim() || isAITyping}
                 >
                   <Send className="h-4 w-4" />
                 </Button>

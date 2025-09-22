@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, signOut } from "aws-amplify/auth";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -12,7 +12,7 @@ import { Shield, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!username || !password) {
+    if (!email || !password) {
       setError("Please fill in all fields");
       return;
     }
@@ -29,7 +29,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const user = await signIn({ username, password });
+      const user = await axios.post('/api/accounts/login', { email, password });
       console.log("Sign In successful:", user);
       setError("");
       // Redirect to dashboard or main page
@@ -45,7 +45,7 @@ export default function LoginPage() {
   async function handleLogout() {
     setIsLoading(true);
     try {
-      await signOut();
+     
       console.log("logged out");
     } catch (err) {
       console.error("Logout error:", err);
@@ -77,13 +77,13 @@ export default function LoginPage() {
           <CardContent className="space-y-4">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-slate-200">Username or Email</Label>
+                <Label htmlFor="email" className="text-slate-200">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username or email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400 focus:border-purple-400"
                   disabled={isLoading}
                 />

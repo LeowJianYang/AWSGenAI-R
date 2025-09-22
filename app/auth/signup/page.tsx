@@ -81,7 +81,7 @@ export default function SignUpPage() {
       
     //   console.log("User ID:", userId);
 
-    axios.post('/api/storage', {
+    axios.post('/api/accounts/signup', {
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -110,10 +110,10 @@ export default function SignUpPage() {
     setError("");
 
     try {
-    //   await confirmSignUp({
-    //     username: formData.username,
-    //     confirmationCode,
-    //   });
+      axios.post('/api/accounts/auth', {
+        email: formData.email,
+        code: confirmationCode
+      })
       
       setSuccess("Email confirmed successfully! You can now sign in.");
       setTimeout(() => {
